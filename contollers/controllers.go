@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -105,16 +106,54 @@ func SignUp() gin.HandlerFunc {
 
 		// Return user
 		c.JSON(http.StatusCreated, "Successfully signed in!👍")
-
-
-
-
 	}
-
-
 }
 
 func Login() gin.HandlerFunc {
+
+	return func(c *gin.Context) {
+		// Set context
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		// Create user
+		var user models.User
+		// Cappture the json data to the user
+		err := c.BindJSON(&user)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error":err})
+		}
+
+		// Check if user email exists in the database
+		err := UserCollection.FindOne(ctx, bson.M{"email":user.Email}).Decode(&founduser)
+		if err != nil{
+			c.JSON(http.StatusInternalServerError, gin.H{"error":"login or password incorrect"})
+			return
+		}
+
+		// Verify password
+		passwordIsValid, msg := VerifyPassword(*user.Password, *founduser.Password)
+
+		defer cancel()
+
+		// Check password
+		if !passwordIsValid {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+			fmt.Println(msg)
+			return
+		}
+
+		// Generate token if user details are correct
+		token, refreshToken, _ := generate.TokenGenerator(*founduser.Email, *founduser.first_Name, *founduser.last_Name, *founduser.User_ID)
+
+		// Update founduser details
+		generate.UpdateAllTokens(token, refreshToken, founduser.User_ID)
+
+		// Return founduser
+		c.JSON(http.StatusFound, founduser)
+
+
+	}
 
 }
 
