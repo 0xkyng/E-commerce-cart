@@ -30,6 +30,8 @@ func SignUp() gin.HandlerFunc {
 
 		// Create user
 		var user models.User
+		// using BindJson method to serialize todo or extract data
+ 		// From database to user
 		err := c.BindJSON(&user)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error":err.Error()})
@@ -109,6 +111,7 @@ func SignUp() gin.HandlerFunc {
 	}
 }
 
+// Login Endpoint
 func Login() gin.HandlerFunc {
 
 	return func(c *gin.Context) {
@@ -118,7 +121,8 @@ func Login() gin.HandlerFunc {
 
 		// Create user
 		var user models.User
-		// Cappture the json data to the user
+		// using BindJson method to serialize todo or extract data
+       // From User struct to user
 		err := c.BindJSON(&user)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error":err})
@@ -131,12 +135,12 @@ func Login() gin.HandlerFunc {
 			return
 		}
 
-		// Verify password
+		// Verify if password exists
 		passwordIsValid, msg := VerifyPassword(*user.Password, *founduser.Password)
 
 		defer cancel()
 
-		// Check password
+		// Check if password is correct
 		if !passwordIsValid {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 			fmt.Println(msg)
