@@ -73,7 +73,7 @@ func (app *Application) AddToCart() gin.HandlerFunc {
 }
 
 // RemoveItem removes item from the cart
-func (app *Application) RemoveItem() gin.HandlerFunc {
+func (app *Application) RemoveCartItem() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Check if product id exists
 		productQueryID := c.Query("id")
@@ -106,20 +106,17 @@ func (app *Application) RemoveItem() gin.HandlerFunc {
 
 		defer cancel()
 
-		err =database.RemoveCartItem(ctx, app.prodCollection, app.userCollection, productID, userQueryID)
+		err = database.RemoveCartItem(ctx, app.prodCollection, app.userCollection, productID, userQueryID)
 		if err != nil {
 			c.IndentedJSON(http.StatusInternalServerError, err)
 			return
 		}
 
 		c.IndentedJSON(http.StatusOK, "Successfully removed item from cart")
-
-
-
 	}
-
 }
 
+// GetItemFromCart selects a particular item from the cart
 func GetItemFromCart() gin.HandlerFunc {
 
 }
@@ -128,6 +125,43 @@ func BuyFromCart() gin.HandlerFunc {
 
 }
 
-func InstantBuy() gin.HandlerFunc {
+func (app *Application) InstantBuy() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Check if user id exists
+		UserQueryID := c.Query("id")
+		if UserQueryID == "" {
+			log.Println("user id is empty")
+			// Abort program
+			_ = c.AbortWithError(http.StatusBadRequest, errors.New("UserID is empty"))
+		}
 
-}
+		// Check if product id exists
+		ProductQueryID := c.Query("id")
+		if ProductQueryID == "" {
+			log.Println("Product id id is empty")
+			// Abort program
+			_ = c.AbortWithError(http.StatusBadRequest, errors.New("product id is empty"))
+			return
+		}
+
+		// //Check if the product is genuine
+		productID, err := primitive.ObjectIDFromHex(ProductQueryID)
+		if err != nil {
+			log.Println(err)
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		// Call the database level function
+
+		var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+
+		defer cancel()
+
+		err = database.InstantBuy(ctx, app.prodCollection, app.userCollection, productID, UserQueryID)
+		if err != nil {
+			c.IndentedJSON(http.StatusInternalServerError, err)
+		}
+
+		c.IndentedJSON(200, "Successully placed the order")
+	}

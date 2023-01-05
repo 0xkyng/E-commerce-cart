@@ -19,7 +19,7 @@ func AddProductToCart() gin.HandlerFunc{
 
 }
 
-func RemoveItem() gin.HandlerFunc {
+func RemoveCartItem() gin.HandlerFunc {
 
 }
 
