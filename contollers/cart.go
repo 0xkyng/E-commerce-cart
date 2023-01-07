@@ -56,10 +56,12 @@ func (app *Application) AddToCart() gin.HandlerFunc {
 			return
 		}
 
-		// Run the database level function
+		// Set context
 		var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
 
 		defer cancel()
+
+		// Run the database level function
 
 		err = database.AddProductToCart(ctx, app.prodCollection, app.userCollection, productID, userQueryID)
 		if err != nil {
@@ -101,11 +103,12 @@ func (app *Application) RemoveCartItem() gin.HandlerFunc {
 			return
 		}
 
-		// Call the database level function
+		// Set context
 		var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
 
 		defer cancel()
 
+		// Call the database level function
 		err = database.RemoveCartItem(ctx, app.prodCollection, app.userCollection, productID, userQueryID)
 		if err != nil {
 			c.IndentedJSON(http.StatusInternalServerError, err)
@@ -121,7 +124,29 @@ func GetItemFromCart() gin.HandlerFunc {
 
 }
 
-func BuyFromCart() gin.HandlerFunc {
+func (app *Application) BuyFromCart() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Check if user exists
+		userQueryID := c.Query("id")
+
+		if userQueryID == ""{
+			log.Panicln("user id is empty")
+			_ = c.IndentedJSON(http.StatusInternalServerError, errors.New("user id is empty"))
+		}
+
+		// Set context
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		// Call the database level function
+		err := database.BuyFromCart(ctx, app.userCollection, userQueryID)
+		if err != nil {
+			c.IndentedJSON(http.StatusInternalServerError, err)
+		}
+
+		c.IndentedJSON("Successfully placed order")
+
+	}
 
 }
 
@@ -152,12 +177,12 @@ func (app *Application) InstantBuy() gin.HandlerFunc {
 			return
 		}
 
-		// Call the database level function
-
+		// Set context
 		var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
 
 		defer cancel()
 
+		// Call the database level function
 		err = database.InstantBuy(ctx, app.prodCollection, app.userCollection, productID, UserQueryID)
 		if err != nil {
 			c.IndentedJSON(http.StatusInternalServerError, err)
@@ -165,3 +190,4 @@ func (app *Application) InstantBuy() gin.HandlerFunc {
 
 		c.IndentedJSON(200, "Successully placed the order")
 	}
+}
