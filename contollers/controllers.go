@@ -191,6 +191,45 @@ func ProductViewerAdmin() gin.HandlerFunc {
 }
 
 func SearchProduct() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Create product list
+		var productlist []models.Product
+		// Set context
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+
+		// Find executes a find command and returns
+		// A Cursor over the matching documents in the collection.
+		cursor, err := ProductCollection.Find(ctx, bson.D{{}})
+		if err != nil {
+			c.IndentedJSON(http.StatusInternalServerError,"somrthing went wrong, please try after some time")
+			return
+		}
+
+		// All iterates the cursor and decodes each document into results. 
+		// The results parameter must be a pointer to a slice.
+		err = cursor.All(ctx, &productlist)
+		if err != nil {
+			log.Println(err)
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		defer cursor.Close()
+
+		 if err := cursor.Err(); err != nil {
+			log.Println(err)
+			c.IndentedJSON(400, "invalid")
+			return
+		}
+
+		defer cancel()
+
+		c.IndentedJSON(200, productlist)
+
+
+
+	}
+	
 
 }
 
