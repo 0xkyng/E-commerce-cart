@@ -7,17 +7,43 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/codekyng/E-commerce-cart.git/database"
 	"github.com/codekyng/E-commerce-cart.git/models"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/crypto/bcrypt"
 )
 
-func HashPassword(password string) string {
+var UserCollection *mongo.Collection = database.UserData(database.Client, "Users")
+var ProductCollection *mongo.Collection = database.ProductData(database.Client, "products")
+var Validate = validator.New()
 
+// HashPassword hashes user password
+func HashPassword(password string) string {
+	// Hash password
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	if err != nil {
+		log.Panic(err)
+	}
+	return string(bytes)
 }
 
+// VerifyPassword compares user password & given password
 func VerifyPassword(userPassword string, givenPassword string) (bool, string) {
+	// Unhash the password and compare
+	err := bcrypt.CompareHashAndPassword([]byte(givenPassword), []byte(userPassword))
+	valid := true
+	msg := ""
+
+	if err != nil {
+		msg = "login or password is incorrect"
+		valid = false
+	}
+
+	return valid, msg
 
 }
 
@@ -31,10 +57,10 @@ func SignUp() gin.HandlerFunc {
 		// Create user
 		var user models.User
 		// using BindJson method to serialize todo or extract data
- 		// From database to user
+		// From database to user
 		err := c.BindJSON(&user)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error":err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
@@ -55,7 +81,7 @@ func SignUp() gin.HandlerFunc {
 
 		// Checck count
 		if count > 0 {
-			c.JSON(http.StatusInternalServerError, gin.H{"error":"user already exist"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "user already exist"})
 		}
 
 		// Check if user phone number exist on database
@@ -70,7 +96,7 @@ func SignUp() gin.HandlerFunc {
 
 		// Check count
 		if count > 0 {
-			c.JSON(http.StatusInternalServerError, gin.H{"error":"this phone number is already in use"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "this phone number is already in use"})
 			return
 		}
 
@@ -100,7 +126,7 @@ func SignUp() gin.HandlerFunc {
 		_, inserterr := UserCollection.InsertOne(ctx, user)
 		// Handle error
 		if inserterr != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error":"the user did not get created"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "the user did not get created"})
 			return
 		}
 
@@ -122,16 +148,16 @@ func Login() gin.HandlerFunc {
 		// Create user
 		var user models.User
 		// using BindJson method to serialize todo or extract data
-       // From User struct to user
+		// From User struct to user
 		err := c.BindJSON(&user)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error":err})
+			c.JSON(http.StatusBadRequest, gin.H{"error": err})
 		}
 
 		// Check if user email exists in the database
-		err := UserCollection.FindOne(ctx, bson.M{"email":user.Email}).Decode(&founduser)
-		if err != nil{
-			c.JSON(http.StatusInternalServerError, gin.H{"error":"login or password incorrect"})
+		err := UserCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&founduser)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "login or password incorrect"})
 			return
 		}
 
@@ -156,7 +182,6 @@ func Login() gin.HandlerFunc {
 		// Return founduser
 		c.JSON(http.StatusFound, founduser)
 
-
 	}
 
 }
@@ -170,5 +195,5 @@ func SearchProduct() gin.HandlerFunc {
 }
 
 func SearchProductByQuery() {
-	
+
 }
