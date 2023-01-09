@@ -17,9 +17,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var UserCollection *mongo.Collection = database.UserData(database.Client, "Users")
-var ProductCollection *mongo.Collection = database.ProductData(database.Client, "products")
-var Validate = validator.New()
+var (
+	UserCollection    *mongo.Collection = database.UserData(database.Client, "Users")
+	ProductCollection *mongo.Collection = database.ProductData(database.Client, "products")
+	Validate                            = validator.New()
+)
 
 // HashPassword hashes user password
 func HashPassword(password string) string {
@@ -201,11 +203,11 @@ func SearchProduct() gin.HandlerFunc {
 		// A Cursor over the matching documents in the collection.
 		cursor, err := ProductCollection.Find(ctx, bson.D{{}})
 		if err != nil {
-			c.IndentedJSON(http.StatusInternalServerError,"somrthing went wrong, please try after some time")
+			c.IndentedJSON(http.StatusInternalServerError, "somrthing went wrong, please try after some time")
 			return
 		}
 
-		// All iterates the cursor and decodes each document into results. 
+		// All iterates the cursor and decodes each document into results.
 		// The results parameter must be a pointer to a slice.
 		err = cursor.All(ctx, &productlist)
 		if err != nil {
@@ -216,7 +218,7 @@ func SearchProduct() gin.HandlerFunc {
 
 		defer cursor.Close()
 
-		 if err := cursor.Err(); err != nil {
+		if err := cursor.Err(); err != nil {
 			log.Println(err)
 			c.IndentedJSON(400, "invalid")
 			return
@@ -236,7 +238,7 @@ func SearchProductByQuery() gin.HandlerFunc {
 		queryParam := c.Query("name")
 
 		// Check if name is empty
-		if queryParam == ""{
+		if queryParam == "" {
 			log.Println("query is empty")
 			c.Header("Content-Type", "application/json")
 			c.JSON(http.StatusNotFound, gin.H{"Error": "Invalid Search Index"})
@@ -248,13 +250,13 @@ func SearchProductByQuery() gin.HandlerFunc {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
 
-		searchquerydb, err := ProductCollection.Find(ctx, bson.M{"product_name":bson.M{"$regex":queryParam}})
+		searchquerydb, err := ProductCollection.Find(ctx, bson.M{"product_name": bson.M{"$regex": queryParam}})
 
 		if err != nil {
 			c.IndentedJSON(404, "something wentwrong while fetching the data")
 			return
 		}
-		
+
 		err = searchquerydb.All(ctx, &Searchproducts)
 		if err != nil {
 			log.Println(err)
@@ -273,9 +275,8 @@ func SearchProductByQuery() gin.HandlerFunc {
 		defer cancel()
 
 		// Return Searchedgit push
-		 product
+		product
 		c.IndentedJSON(200, Searchproducts)
 	}
-
 
 }
