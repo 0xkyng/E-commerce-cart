@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/codekyng/E-commerce-cart.git/database"
+	"github.com/codekyng/E-commerce-cart.git/models"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -121,6 +123,58 @@ func (app *Application) RemoveCartItem() gin.HandlerFunc {
 
 // GetItemFromCart selects a particular item from the cart
 func GetItemFromCart() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user_id := c.Query("id")
+
+		if user_id == "" {
+			c.Header("Content-Type", "application/json")
+			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid id"})
+			c.Abort()
+			return
+		}
+
+		// Get user id
+		usert_id, _ := primitive.ObjectIDFromHex(user_id)
+
+		// Set context
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		// Get cart details for th user
+		var filledcart models.User
+		err := UserCollection.FindOne(ctx, bson.D{primitive.E{Key: "_id", Value: usert_id}}).Decode(&filledcart)
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(500, "not found")
+			return
+		}
+
+		// Aggregation Pipeline Stages
+		filter_match := bson.D{{Key: "$match", Value: bson.D{primitive.E{Key: "_id", Value: user_id}}}}
+		unwind := bson.D{{Key: "$unwind", Value: bson.D{primitive.E{Key: "path", Value: "$usercart"}}}}
+		grouping := bson.D{{Key: "$group", Value: bson.D{primitive.E{Key: "_id", Value: "$_id"}, {Key: "total", Value: bson.D{primitive.E{Key: 
+		"$sum", Value: "$usercat.price"}}}}}}
+
+		// Run aggregation function
+		pointcursor, err := UserCollection.Aggregate(ctx, mongo.Pipeline{filter_match, unwind, grouping})
+		if err != nil {
+			log.Println(err)
+		}
+		var listing []bson.M
+		err = pointcursor.All(ctx, &listing)
+		if err != nil {
+			log.Println(err)
+			c.AbortWithStatus(http.StatusInternalServerError)
+		}
+
+		// Range over the data
+		for _, json := range listing {
+			c.IndentedJSON(200, json["total"])
+			c.IndentedJSON(200, filledcart.UserCart)
+		}
+		ctx.Done()
+
+	}
 
 }
 
@@ -129,9 +183,9 @@ func (app *Application) BuyFromCart() gin.HandlerFunc {
 		// Check if user exists
 		userQueryID := c.Query("id")
 
-		if userQueryID == ""{
+		if userQueryID == "" {
 			log.Panicln("user id is empty")
-			_ = c.IndentedJSON(http.StatusInternalServerError, errors.New("user id is empty"))
+			_ = c.AbortWithError(http.StatusBadRequest, errors.New("user id is empty"))
 		}
 
 		// Set context
