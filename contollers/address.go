@@ -83,6 +83,29 @@ func AddAddress() gin.HandlerFunc {
 }
 
 func EditHomeAddress() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// User id whose 
+		// Address you want to edit
+		user_id := c.Query("id")
+		if user_id == ""{
+			c.Header("Content-Type", "Application/json")
+			c.JSON(http.StatusNotFound, gin.H{"Error":"Invalid"})
+			c.Abort()
+			return
+		}
+
+		// Create new user id
+		usert_id, err := primitive.ObjectIDFromHex(user_id)
+		if err != nil {
+			c.IndentedJSON(500, "Internal server Error")
+		}
+
+		// Set context
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+		filter := bson.D{primitive.E{Key: "_id", Value: usert_id}}
+		
+	}
 
 }
 
