@@ -82,10 +82,12 @@ func AddAddress() gin.HandlerFunc {
 
 }
 
+
+// EditHomeAddress edits user home address
 func EditHomeAddress() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Query the user id whose 
-		// Address you want to edit
+		// Query the user id whose
+		// Home address is to be edited
 		user_id := c.Query("id")
 		if user_id == ""{
 			c.Header("Content-Type", "Application/json")
@@ -94,13 +96,15 @@ func EditHomeAddress() gin.HandlerFunc {
 			return
 		}
 
-		// Create new user id
 		usert_id, err := primitive.ObjectIDFromHex(user_id)
 		if err != nil {
 			c.IndentedJSON(500, "Internal server Error")
 		}
 
 		var editaddress models.Address
+		if err = c.BindJSON(&editaddress); err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+		}
 
 		// Set context
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
@@ -122,7 +126,39 @@ func EditHomeAddress() gin.HandlerFunc {
 
 }
 
+
+// EditWorkAddress edist user work address
 func EditWorkAddress() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Query user id whose
+		// Work address to be edited
+		user_id := c.Query("id")
+		if user_id == ""{
+			c.Header("Content-Type", "application/json")
+			c.IndentedJSON(http.StatusNotFound, "Invalid")
+			c.Abort()
+			return
+		}
+
+		usert_id, err := primitive.ObjectIDFromHex(user_id)
+		if err != nil {
+			c.IndentedJSON(500, "Internal Server Error")
+		}
+
+		var editaddress models.Address
+		if err = c.BindJSON(&editaddress); err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+		}
+
+		// Set context
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		filter := bson.D{primitive.E{Key: "_id", Value: usert_id}}
+		update := bson.D{{Key: "$set", Value: bson.D{primitive.E{Key: "addresss.1.house_name", Value: editaddress.House}, {Key: 
+		"address.1.street_name", Value: editaddress.Street}, {Key: "address.1.city_name", Value: editaddress.City}, {Key: 
+		"address.1.pin_code", Value: editaddress.Pincode}}}}
+
+		
+	}
 
 }
 
