@@ -14,7 +14,7 @@ import (
 var (
 	ErrCantFindProduct = errors.New("can't find product")
 	ErrCantDecodeProducts = errors.New("can't find the product")
-	ErrUserIsNotValid = errors.New("this user is not valid")
+	ErrUserIdIsNotValid = errors.New("this user is not valid")
 	ErrCantUpdateUser = errors.New("can't add this product to the cart")
 	ErrCantRemoveItemCart = errors.New("can't remove this item from cart")
 	ErrCantBUyItemcart = errors.New("can't update the purchase")
@@ -56,7 +56,22 @@ func AddProductToCart(ctx context.Context, prodCollection, userCollection, *mong
 
 }
 
-func RemoveCartItem() gin.HandlerFunc {
+func RemoveCartItem(ctx context.Context, prodCollection, userCollection *mongo.Collection, productID primitive.ObjectID, userID string) error{
+	id, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		log.Println(err)
+		return ErrUserIdIsNotValid
+	}
+
+	// Find item from Db
+	// And remove from the cart
+	filter := bson.D{primitive.E{Key: "_id", Value: id}}
+	update := bson.M{"$pull": bson.M{"usercart": bson.M{"_id": productID}}}
+	_, err = UpdateMany(ctx, filter, update)
+	if err != nil {
+		return ErrCantRemoveItemCart
+	}
+	return nil
 
 }
 
