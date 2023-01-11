@@ -84,7 +84,7 @@ func AddAddress() gin.HandlerFunc {
 
 func EditHomeAddress() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// User id whose 
+		// Query the user id whose 
 		// Address you want to edit
 		user_id := c.Query("id")
 		if user_id == ""{
@@ -100,11 +100,24 @@ func EditHomeAddress() gin.HandlerFunc {
 			c.IndentedJSON(500, "Internal server Error")
 		}
 
+		var editaddress models.Address
+
 		// Set context
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
 		filter := bson.D{primitive.E{Key: "_id", Value: usert_id}}
-		
+		update := bson.D{{Key: "$set", Value: bson.D{primitive.E{Key: "addresss.0.house_name", Value: editaddress.House}, {Key: 
+		"address.0.street_name", Value: editaddress.Street}, {Key: "address.0.city_name", Value: editaddress.City}, {Key: "address.0.pin_code", 
+		Value: editaddress.Pincode}}}}
+		_, err = UserCollection.UpdateOne(ctx, filter, update)
+		if err != nil {
+			c.IndentedJSON(500, "Something went wrong")
+			return
+		}
+
+		defer cancel()
+		ctx.Done()
+		c.IndentedJSON(200, "Successsfully edited home address")
 	}
 
 }
