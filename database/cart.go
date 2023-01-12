@@ -3,6 +3,7 @@ package database
 import (
 	"errors"
 	"log"
+	"time"
 
 	"github.com/codekyng/E-commerce-cart.git/models"
 	"github.com/gin-gonic/gin"
@@ -75,7 +76,37 @@ func RemoveCartItem(ctx context.Context, prodCollection, userCollection *mongo.C
 
 }
 
-func GetItemFromCart() gin.HandlerFunc{
+func GetItemFromCart(ctx context.Context, userCollection *mongo.Collection, userID string) error{
+	// Get user id
+	id, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		log.Println(err)
+		return ErrUserIdIsNotValid
+	}
+
+	var getcartitems models.User
+	var odercart models.Order
+
+	// Checkout cart
+	odercart.Order_ID = primitive.NewObjectID()
+	odercart.Ordered_At = time.Now()
+	odercart.Order_Cart = make([]models.ProductUser, 0)
+	odercart.Payment_Method.COD = true
+
+	// Add product user details
+	// By running the aggregate function
+	unwind := bson.D{{Key: "$unwind", Value: bson.D{primitive.E{Key: "path", Value: "$usercart"}}}}
+	grouping := bson.D{{Key: "$group", Value: bson.D{primitive.E{Key: "_id", Value: "$_id"}, {Key: "total", 
+	Value: bson.D{primitive.E{Key: "$sum", Value: "$usercart.price"}}}}}}
+	currentresults, err := userCollection.Aggregate(ctx, unwind, grouping)
+	ctx.Done()
+	if err != nil {
+		panic(err)
+	}
+	// Fetch the cart of the user
+	// Find the cart tool
+	// Create an order with the items
+	// Empty the cart
 
 }
 
