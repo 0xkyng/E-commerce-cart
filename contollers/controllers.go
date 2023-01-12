@@ -274,8 +274,7 @@ func SearchProductByQuery() gin.HandlerFunc {
 
 		defer cancel()
 
-		// Return Searchedgit push
-		product
+		// Return Searched product
 		c.IndentedJSON(200, Searchproducts)
 	}
 

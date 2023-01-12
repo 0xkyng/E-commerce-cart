@@ -1,10 +1,10 @@
 package database
 
 import (
+	"context"
 	"errors"
 	"log"
 	"time"
-	"context"
 
 	"github.com/codekyng/E-commerce-cart.git/models"
 	"github.com/gin-gonic/gin"
@@ -154,6 +154,45 @@ func BuyItemFromCart(ctx context.Context, userCollection *mongo.Collection, user
 
 }
 
-func InstantBuy() gin.HandlerFunc {
+func InstantBuy(ctx context.Context, prodCollection, userCollection *mongo.Collection, productID primitive.ObjectID, UserID string) error {
+	//Get user id
+	id, err := primitive.ObjectIDFromHex(UserID)
+	if err != nil {
+		log.Println(err)
+		return ErrUserIdIsNotValid
+	}
+
+	var product_details models.ProductUser
+	var orders_details models.Order
+
+	orders_details.Order_ID = primitive.NewObjectID()
+	orders_details.Ordered_At = time.Now()
+	orders_details.Order_Cart = make([]models.ProductUser, 0)
+	orders_details.Payment_Method.COD = true
+	err =prodCollection.FindOne(ctx, bson.D{primitive.E{Key: "_id", Value: productID}}).Decode(&product_details)
+	if err != nil {
+		log.Println(err)
+	}
+	orders_details.Price = product_details.Price
+
+	// Add orders to the user
+	filter := bson.D{primitive.E{Key: "_id", Value: id}}
+	update := bson.D{{Key: "$push", Value: bson.D{primitive.E{Key: "orders", Value: orders_details}}}}
+	_, err = userCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Println(err)
+	}
+
+	// Add poduct details 
+	// To the cart
+	filter2 := bson.D{primitive.E{Key: "_id", Value: id}}
+	update2 :=bson.M{"$push": bson.M{"order_list":product_details}}
+	_, err = userCollection.UpdateOne(ctx, filter2, update2)
+	if err != nil {
+		log.Println(err)
+	}
+	return nil
+
+
 
 }
