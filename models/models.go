@@ -42,7 +42,7 @@ type ProductUser struct{
 }
 
 type Address struct {
-	Address_ID				primitive.ObjectID		`bson:"_id"`
+	Address_id				primitive.ObjectID		`bson:"_id"`
 	House					*string					`json:"huose_name" bson:"house_name"`	
 	Street					*string					`json:"street_name" bson:"street_name"`
 	City					*string					`json:"city_name" bson:"city_name"`

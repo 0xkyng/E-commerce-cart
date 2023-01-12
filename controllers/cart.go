@@ -193,12 +193,12 @@ func (app *Application) BuyFromCart() gin.HandlerFunc {
 		defer cancel()
 
 		// Call the database level function
-		err := database.BuyFromCart(ctx, app.userCollection, userQueryID)
+		err := database.BuyItemFromCart(ctx, app.userCollection, userQueryID)
 		if err != nil {
 			c.IndentedJSON(http.StatusInternalServerError, err)
 		}
 
-		c.IndentedJSON("Successfully placed order")
+		c.IndentedJSON(200,"Successfully placed order")
 
 	}
 

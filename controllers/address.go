@@ -30,7 +30,7 @@ func AddAddress() gin.HandlerFunc {
 		}
 
 		var addresses models.Address
-		addresses.Address_id =primitive.NewObjectID()
+		addresses.Address_id = primitive.NewObjectID()
 
 		if err = c.BindJSON(&addresses); err != nil {
 			c.IndentedJSON(http.StatusNotAcceptable, err.Error())

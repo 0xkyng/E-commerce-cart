@@ -9,6 +9,7 @@ import (
 
 	"github.com/codekyng/E-commerce-cart.git/database"
 	"github.com/codekyng/E-commerce-cart.git/models"
+	generate "github.com/codekyng/E-commerce-cart.git/tokens"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
@@ -17,11 +18,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var (
-	UserCollection    *mongo.Collection = database.UserData(database.Client, "Users")
-	ProductCollection *mongo.Collection = database.ProductData(database.Client, "products")
-	Validate                            = validator.New()
-)
+var UserCollection *mongo.Collection = database.UserData(database.Client, "Users")
+var ProductCollection *mongo.Collection = database.ProductData(database.Client, "Products")
+var Validate = validator.New()
 
 // HashPassword hashes user password
 func HashPassword(password string) string {
@@ -74,7 +73,7 @@ func SignUp() gin.HandlerFunc {
 		}
 
 		// Check if user email exist on database
-		count, err := UserCollection.countDocuments(ctx, bson.M{"email": user.Email})
+		count, err := UserCollection.CountDocuments(ctx, bson.M{"email": user.Email})
 		if err != nil {
 			log.Panic(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
@@ -87,7 +86,7 @@ func SignUp() gin.HandlerFunc {
 		}
 
 		// Check if user phone number exist on database
-		count, err = UserCollection.countDocuments(ctx, bson.M{"phone": user.Phone})
+		count, err = UserCollection.CountDocuments(ctx, bson.M{"phone": user.Phone})
 
 		defer cancel()
 		if err != nil {
@@ -116,7 +115,7 @@ func SignUp() gin.HandlerFunc {
 		user.User_ID = user.ID.Hex()
 
 		// Token
-		token, refreshtoken, _ := generate.TokenGenerator(*user.Email, *&user.First_Name, *user.Last_Name, user.User_ID)
+		token, refreshtoken, _ := generate.TokenGenerator(*user.Email, *user.First_Name, *user.Last_Name, user.User_ID)
 		user.Token = &token
 		user.Refresh_Token = &refreshtoken
 
@@ -146,18 +145,14 @@ func Login() gin.HandlerFunc {
 		// Set context
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
-
-		// Create user
 		var user models.User
-		// using BindJson method to serialize todo or extract data
-		// From User struct to user
-		err := c.BindJSON(&user)
-		if err != nil {
+		var founduser models.User
+		if err := c.BindJSON(&user); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err})
+			return
 		}
-
-		// Check if user email exists in the database
 		err := UserCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&founduser)
+		defer cancel()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "login or password incorrect"})
 			return
@@ -176,10 +171,11 @@ func Login() gin.HandlerFunc {
 		}
 
 		// Generate token if user details are correct
-		token, refreshToken, _ := generate.TokenGenerator(*founduser.Email, *founduser.first_Name, *founduser.last_Name, *founduser.User_ID)
+		token, refreshToken, _ := generate.TokenGenerator(*founduser.Email, *founduser.First_Name, *founduser.Last_Name, founduser.User_ID)
+		defer cancel()
 
 		// Update founduser details
-		generate.UpdateAllTokens(token, refreshToken, founduser.User_ID)
+		generate.UpdateAllToken(token, refreshToken, founduser.User_ID)
 
 		// Return founduser
 		c.JSON(http.StatusFound, founduser)
@@ -189,7 +185,23 @@ func Login() gin.HandlerFunc {
 }
 
 func ProductViewerAdmin() gin.HandlerFunc {
-
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		var products models.Product
+		defer cancel()
+		if err := c.BindJSON(&products); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		products.Product_ID = primitive.NewObjectID()
+		_, anyerr := ProductCollection.InsertOne(ctx, products)
+		if anyerr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error":"not inserted"})
+			return
+		}
+		defer cancel()
+		c.JSON(http.StatusOK, "Successfylly added")
+	}
 }
 
 func SearchProduct() gin.HandlerFunc {
@@ -216,7 +228,7 @@ func SearchProduct() gin.HandlerFunc {
 			return
 		}
 
-		defer cursor.Close()
+		defer cursor.Close(ctx)
 
 		if err := cursor.Err(); err != nil {
 			log.Println(err)

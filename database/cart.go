@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/codekyng/E-commerce-cart.git/models"
-	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -96,9 +95,9 @@ func BuyItemFromCart(ctx context.Context, userCollection *mongo.Collection, user
 	// Add product user details
 	// By running the aggregate function
 	unwind := bson.D{{Key: "$unwind", Value: bson.D{primitive.E{Key: "path", Value: "$usercart"}}}}
-	grouping := bson.D{{Key: "$group", Value: bson.D{primitive.E{Key: "_id", Value: "$_id"}, {Key: "total", 
-	Value: bson.D{primitive.E{Key: "$sum", Value: "$usercart.price"}}}}}}
-	currentresults, err := userCollection.Aggregate(ctx, unwind, grouping)
+	grouping := bson.D{{Key: "$group", Value: bson.D{primitive.E{Key: "_id", Value: "$_id"}, {Key: "total", Value: bson.D{primitive.E{Key: 
+	"$sum", Value: "$usercart.price"}}}}}}
+	currentresults, err := userCollection.Aggregate(ctx, mongo.Pipeline{unwind, grouping})
 	ctx.Done()
 	if err != nil {
 		panic(err)

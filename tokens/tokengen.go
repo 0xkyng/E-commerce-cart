@@ -11,7 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	// "go.mongodb.org/mongo-driver/x/mongo/driver/mongocrypt/options"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -46,13 +45,13 @@ func TokenGenerator(email string, firstname string, lastname string, uid string)
 	}
 
 	// Create token
-	token, err := jwt.NewWithClaims(jwt.SigningMethodES256, claims).SignedString([](SECRET_KEY))
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(SECRET_KEY))
 
 	if err != nil {
 		return "", "", err
 	}
 
-	refreshtoken, err := jwt.NewWithClaims(jwt.SigningMethodES256, refreshlaims).SignedString([](SECRET_KEY))
+	refreshtoken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshclaims).SignedString([]byte(SECRET_KEY))
 
 	if err != nil {
 		log.Panic(err)
