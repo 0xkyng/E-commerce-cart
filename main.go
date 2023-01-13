@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Application setup
 func main() {
 	port := os.Getenv("PORT")
 	if port == ""{
