@@ -21,6 +21,7 @@ var (
 	ErrCantBUyCartItem = errors.New("can't update the purchase")
 )
 
+// AddProductToCart
 func AddProductToCart(ctx context.Context, prodCollection, userCollection *mongo.Collection, productID primitive.ObjectID, userID string) error {
 	// Search db to find
 	// The prodcut 
