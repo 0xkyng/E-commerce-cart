@@ -26,6 +26,7 @@ var UserData *mongo.Collection = database.UserData(database.Client, "Users")
 
 var SECRET_KEY = os.Getenv("CODE_KYNG")
 
+// TokenGenerator
 func TokenGenerator(email string, firstname string, lastname string, uid string) (signedtoken string, signedrefreshtoken string, err error) {
 
 	claims := &SignedDetails{
