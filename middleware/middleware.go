@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Authentication
 func Authentication() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get token
