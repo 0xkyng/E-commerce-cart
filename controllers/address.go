@@ -143,11 +143,14 @@ func EditWorkAddress() gin.HandlerFunc {
 			return
 		}
 
+		
+
 		usert_id, err := primitive.ObjectIDFromHex(user_id)
 		if err != nil {
 			c.IndentedJSON(500, "Internal Server Error")
 		}
 
+		// Bind json to user address
 		var editaddress models.Address
 		if err = c.BindJSON(&editaddress); err != nil {
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
